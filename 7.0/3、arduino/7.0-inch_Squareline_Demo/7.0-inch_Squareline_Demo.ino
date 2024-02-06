@@ -1,3 +1,4 @@
+
 #include <Wire.h>
 #include <SPI.h>
 
@@ -15,7 +16,10 @@
 /******Please define a corresponding line based on your development board.************/
 //#define Display_43
 //#define Display_50
-#define Display_70
+//#define Display_70
+#define Display_71
+//#include <Arduino_GFX_Library.h>
+//#define GFX_BL 2
 /*******************************************************************************
  * Screen Driver Configuration 
 *******************************************************************************/
@@ -46,20 +50,36 @@ Arduino_RPi_DPI_RGBPanel *lcd = new Arduino_RPi_DPI_RGBPanel(
   800 /* width */, 0 /* hsync_polarity */, 210 /* hsync_front_porch */, 4 /* hsync_pulse_width */, 43 /* hsync_back_porch */,
   480 /* height */, 0 /* vsync_polarity */, 22 /* vsync_front_porch */, 4 /* vsync_pulse_width */, 12 /* vsync_back_porch */,
   1 /* pclk_active_neg */, 16000000 /* prefer_speed */, true /* auto_flush */);
-  
-#elif defined (Display_70)       //7.0INCH 800x480
-Arduino_ESP32RGBPanel *bus = new Arduino_ESP32RGBPanel(
-  GFX_NOT_DEFINED /* CS */, GFX_NOT_DEFINED /* SCK */, GFX_NOT_DEFINED /* SDA */,
-  41 /* DE */, 40 /* VSYNC */, 39 /* HSYNC */, 0 /* PCLK */,
-  14 /* R0 */, 21 /* R1 */, 47 /* R2 */, 48 /* R3 */, 45 /* R4 */,
-  9 /* G0 */, 46 /* G1 */, 3 /* G2 */, 8 /* G3 */, 16 /* G4 */, 1 /* G5 */,
-  15 /* B0 */, 7 /* B1 */, 6 /* B2 */, 5 /* B3 */, 4 /* B4 */
-);
-Arduino_RPi_DPI_RGBPanel *lcd = new Arduino_RPi_DPI_RGBPanel(
-  bus,
-  800 /* width */, 0 /* hsync_polarity */, 210 /* hsync_front_porch */, 1 /* hsync_pulse_width */, 46 /* hsync_back_porch */,
-  480 /* height */, 0 /* vsync_polarity */, 22 /* vsync_front_porch */, 1 /* vsync_pulse_width */, 23 /* vsync_back_porch */,
-  0 /* pclk_active_neg */, 16000000 /* prefer_speed */, true /* auto_flush */);
+
+#elif defined (Display_70)       //7.0INCH 800x480 all messed up
+Arduino_ESP32RGBPanel* lcd = new Arduino_ESP32RGBPanel(
+    // GFX_NOT_DEFINED /* CS */, GFX_NOT_DEFINED /* SCK */, GFX_NOT_DEFINED /* SDA */,
+    41 /* DE */, 40 /* VSYNC */, 39 /* HSYNC */, 0 /* PCLK */,
+    14 /* R0 */, 21 /* R1 */, 47 /* R2 */, 48 /* R3 */, 45 /* R4 */,
+    9 /* G0 */, 46 /* G1 */, 3 /* G2 */, 8 /* G3 */, 16 /* G4 */, 1 /* G5 */,
+    15 /* B0 */, 7 /* B1 */, 6 /* B2 */, 5 /* B3 */, 4 /* B4 */,
+    //  800 /* width */,
+    0 /* hsync_polarity */, 210 /* hsync_front_porch */, 1 /* hsync_pulse_width */, 46 /* hsync_back_porch */,
+    //  480 /* height */,
+    0 /* vsync_polarity */, 22 /* vsync_front_porch */, 1 /* vsync_pulse_width */, 23 /* vsync_back_porch */,
+    0 /* pclk_active_neg */, 16000000 /* prefer_speed */,false /*useBigEndian*/,
+    // true /* auto_flush */,
+    0 /*de_idle_high*/, 0 /*pclk_idle_high*/
+    );
+#elif defined (Display_71)       //7.0INCH 800x480
+
+//#include <Arduino_GFX_Library.h>
+//#define GFX_BL 2
+Arduino_ESP32RGBPanel* rgbpanel = new Arduino_ESP32RGBPanel(
+    41 /* DE */, 40 /* VSYNC */, 39 /* HSYNC */, 0 /* 42 PCLK */,
+    14 /* R0 */, 21 /* R1 */, 47 /* R2 */, 48 /* R3 */, 45 /* R4 */,
+    9 /* G0 */, 46 /* G1 */, 3 /* G2 */, 8 /* G3 */, 16 /* G4 */, 1 /* G5 */,
+    15 /* B0 */, 7 /* B1 */, 6 /* B2 */, 5 /* B3 */, 4 /* B4 */,
+    0 /* hsync_polarity */, 210 /* 180 hsync_front_porch */, 1 /* 30 hsync_pulse_width */, 46 /* 16 hsync_back_porch */,
+    0 /* vsync_polarity */, 22 /* 12vsync_front_porch */, 1 /* 13 vsync_pulse_width */, 23 /* 10vsync_back_porch */);
+Arduino_RGB_Display* gfx = new Arduino_RGB_Display(
+    800 /* width */, 480 /* height */, rgbpanel, 0 /* rotation */, true /* auto_flush */);
+
 #endif
 
 /*******************************************************************************
@@ -82,18 +102,18 @@ static lv_color_t disp_draw_buf[800 * 480 / 10];      //5,7inch: lv_color_t disp
 static lv_disp_drv_t disp_drv;
 
 /* Display flushing */
-void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
+void my_disp_flush(lv_disp_drv_t* disp, const lv_area_t* area, lv_color_t* color_p)
 {
-  uint32_t w = (area->x2 - area->x1 + 1);
-  uint32_t h = (area->y2 - area->y1 + 1);
+    uint32_t w = (area->x2 - area->x1 + 1);
+    uint32_t h = (area->y2 - area->y1 + 1);
 
 #if (LV_COLOR_16_SWAP != 0)
-  lcd->draw16bitBeRGBBitmap(area->x1, area->y1, (uint16_t *)&color_p->full, w, h);
+    gfx->draw16bitBeRGBBitmap(area->x1, area->y1, (uint16_t*)&color_p->full, w, h);
 #else
-  lcd->draw16bitRGBBitmap(area->x1, area->y1, (uint16_t *)&color_p->full, w, h);
+    gfx->draw16bitRGBBitmap(area->x1, area->y1, (uint16_t*)&color_p->full, w, h);
 #endif
 
-  lv_disp_flush_ready(disp);
+    lv_disp_flush_ready(disp);
 }
 
 void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
@@ -128,10 +148,10 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 
 void setup()
 {
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial.println("LVGL Widgets Demo");
 
-#if defined(Display_50) || defined(Display_70)
+#if defined(Display_50) || defined(Display_70)|| defined(Display_71)
   //IO Port Pins
   pinMode(38, OUTPUT);
   digitalWrite(38, LOW);
@@ -153,10 +173,10 @@ void setup()
   pinMode(0, OUTPUT);//TOUCH-CS
 #endif
 
-  // Init Display
-  lcd->begin();
-  lcd->fillScreen(BLACK);
-  lcd->setTextSize(2);
+// Init Display
+  gfx->begin();
+  gfx->fillScreen(BLACK);
+  gfx->setTextSize(2);
   delay(200);
   
 #ifdef USE_UI
@@ -165,8 +185,8 @@ void setup()
   delay(100);
   touch_init();
 
-  screenWidth = lcd->width();
-  screenHeight = lcd->height();
+  screenWidth = gfx->width();
+  screenHeight = gfx->height();
 
   lv_disp_draw_buf_init(&draw_buf, disp_draw_buf, NULL, screenWidth * screenHeight / 10);
   //  lv_disp_draw_buf_init(&draw_buf, disp_draw_buf, NULL, 480 * 272 / 10);
@@ -195,13 +215,13 @@ void setup()
 #ifdef USE_UI
   ui_init();//ui from Squareline or GUI Guider
 #else
-  lcd->fillScreen(RED);
+  gfx->fillScreen(RED);
   delay(800);
-  lcd->fillScreen(BLUE);
+  gfx->fillScreen(BLUE);
   delay(800);
-  lcd->fillScreen(YELLOW);
+  gfx->fillScreen(YELLOW);
   delay(800);
-  lcd->fillScreen(GREEN);
+  gfx->fillScreen(GREEN);
   delay(800);
 #endif
   Serial.println( "Setup done" );
